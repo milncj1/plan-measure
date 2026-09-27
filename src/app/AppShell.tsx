@@ -11,13 +11,14 @@ interface AppShellProps {
   children: ReactNode;
   documentName: string | null;
   canExport: boolean;
+  savedProjectCount?: number;
   canUndo?: boolean;
   canRedo?: boolean;
   measurementDecimalPlaces?: MeasurementDecimalPlaces | null;
   confirmMeasurementDeletion?: boolean;
   recoveredPlanStartupWorkspace?: RecoveredPlanStartupWorkspace;
-  onOpenPdf: () => void;
   onExport: () => void;
+  onOpenProjects?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
   onMeasurementDecimalPlacesChange?: (decimalPlaces: MeasurementDecimalPlaces) => void;
@@ -32,13 +33,14 @@ export function AppShell({
   children,
   documentName,
   canExport,
+  savedProjectCount = 0,
   canUndo = false,
   canRedo = false,
   measurementDecimalPlaces = null,
   confirmMeasurementDeletion = true,
   recoveredPlanStartupWorkspace = "scales",
-  onOpenPdf,
   onExport,
+  onOpenProjects,
   onUndo,
   onRedo,
   onMeasurementDecimalPlacesChange,
@@ -60,13 +62,14 @@ export function AppShell({
       <AppBar
         documentName={documentName}
         canExport={canExport}
+        savedProjectCount={savedProjectCount}
         canUndo={canUndo}
         canRedo={canRedo}
         measurementDecimalPlaces={measurementDecimalPlaces}
         confirmMeasurementDeletion={confirmMeasurementDeletion}
         recoveredPlanStartupWorkspace={recoveredPlanStartupWorkspace}
-        onOpenPdf={onOpenPdf}
         onExport={onExport}
+        onOpenProjects={onOpenProjects}
         onUndo={onUndo}
         onRedo={onRedo}
         onMeasurementDecimalPlacesChange={onMeasurementDecimalPlacesChange}

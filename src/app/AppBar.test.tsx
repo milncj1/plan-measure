@@ -45,13 +45,23 @@ function press(key: string): KeyboardEvent {
 function renderAppBar({
   documentName = "North Studio — Level 01.pdf",
   canExport = true,
-  onOpenPdf = vi.fn(),
+  savedProjectCount = 0,
+  canUndo = true,
+  canRedo = true,
   onExport = vi.fn(),
+  onOpenProjects = vi.fn(),
+  onUndo = vi.fn(),
+  onRedo = vi.fn(),
 }: {
   documentName?: string | null;
   canExport?: boolean;
-  onOpenPdf?: () => void;
+  savedProjectCount?: number;
+  canUndo?: boolean;
+  canRedo?: boolean;
   onExport?: () => void;
+  onOpenProjects?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 } = {}) {
   act(() => {
     root!.render(
@@ -59,11 +69,16 @@ function renderAppBar({
         <AppBar
           documentName={documentName}
           canExport={canExport}
+          savedProjectCount={savedProjectCount}
+          canUndo={canUndo}
+          canRedo={canRedo}
           measurementDecimalPlaces={2}
           confirmMeasurementDeletion
           recoveredPlanStartupWorkspace="scales"
-          onOpenPdf={onOpenPdf}
           onExport={onExport}
+          onOpenProjects={onOpenProjects}
+          onUndo={onUndo}
+          onRedo={onRedo}
           onMeasurementDecimalPlacesChange={vi.fn()}
           onConfirmMeasurementDeletionChange={vi.fn()}
           onRecoveredPlanStartupWorkspaceChange={vi.fn()}
@@ -71,7 +86,7 @@ function renderAppBar({
       </ThemeProvider>,
     );
   });
-  return { onOpenPdf, onExport };
+  return { onExport, onOpenProjects, onUndo, onRedo };
 }
 
 beforeEach(() => {
@@ -98,25 +113,22 @@ afterEach(() => {
 
 describe("AppBar", () => {
   it("owns document/global actions without reintroducing Viewer Dock responsibilities", () => {
-    const callbacks = renderAppBar();
+    const callbacks = renderAppBar({ savedProjectCount: 2 });
 
     expect(container?.textContent).toContain("Plan Measure");
     expect(container?.textContent).toContain("North Studio — Level 01.pdf");
     expect(container?.textContent).not.toContain("View");
     expect(container?.textContent).not.toContain("Active scale");
 
-    const open = Array.from(container?.querySelectorAll("button") ?? []).find(
-      (button) => button.textContent === "Open PDF",
-    );
     const exportButton = Array.from(container?.querySelectorAll("button") ?? []).find(
       (button) => button.textContent === "Export",
     );
-    if (!open || !exportButton) throw new Error("App Bar document actions were not rendered.");
-    act(() => open.click());
+    if (!exportButton) throw new Error("App Bar document actions were not rendered.");
     act(() => exportButton.click());
+    act(() => buttonByLabel("Projects, 2 saved").click());
 
-    expect(callbacks.onOpenPdf).toHaveBeenCalledOnce();
     expect(callbacks.onExport).toHaveBeenCalledOnce();
+    expect(callbacks.onOpenProjects).toHaveBeenCalledOnce();
     expect(buttonByLabel("Settings")).toBeTruthy();
     expect(document.querySelector('button[aria-label="More actions"]')).toBeNull();
     expect(
@@ -124,21 +136,26 @@ describe("AppBar", () => {
         container!.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>(
           "header button, header a",
         ),
-      ).map((action) => action.textContent?.trim() || action.getAttribute("aria-label")),
-    ).toEqual(["Open PDF", "Export", "Undo", "Redo", "Feedback", "Settings"]);
+      ).map((action) => action.getAttribute("aria-label") || action.textContent?.trim()),
+    ).toEqual([
+      "Export",
+      "Projects, 2 saved",
+      "Undo",
+      "Redo",
+      "Feedback",
+      "Settings",
+    ]);
   });
 
-  it("uses the same ghost command hierarchy for Open PDF and Export", () => {
+  it("uses a ghost command for Export", () => {
     renderAppBar();
     const actions = Array.from(container!.querySelectorAll<HTMLButtonElement>("header button"));
-    const open = actions.find((button) => button.textContent === "Open PDF");
     const exportButton = actions.find((button) => button.textContent === "Export");
-    if (!open || !exportButton) throw new Error("App Bar document actions were not rendered.");
+    if (!exportButton) throw new Error("App Bar document actions were not rendered.");
 
-    expect(open.classList.contains(buttonStyles.ghost!)).toBe(true);
     expect(exportButton.classList.contains(buttonStyles.ghost!)).toBe(true);
-    expect(open.classList.contains(buttonStyles.secondary!)).toBe(false);
     expect(exportButton.classList.contains(buttonStyles.secondary!)).toBe(false);
+    expect(actions.some((button) => button.textContent === "Open PDF")).toBe(false);
   });
 
   it("uses one Tab stop for AppBar actions and arrow keys within that group", () => {
@@ -156,7 +173,7 @@ describe("AppBar", () => {
     press("ArrowRight");
     expect(document.activeElement).toBe(actions[1]);
     press("ArrowRight");
-    expect(document.activeElement).toBe(actions[4]);
+    expect(document.activeElement).toBe(actions[2]);
     press("End");
     expect(document.activeElement).toBe(actions[5]);
     press("ArrowRight");
@@ -168,10 +185,7 @@ describe("AppBar", () => {
     renderAppBar();
     act(() => buttonByLabel("Settings").click());
     const focusedSetting = document.activeElement;
-    const open = Array.from(container!.querySelectorAll<HTMLButtonElement>("button")).find(
-      (candidate) => candidate.textContent === "Open PDF",
-    );
-    expect(focusedSetting).not.toBe(open);
+    expect(focusedSetting?.closest('[role="toolbar"]')).toBeNull();
 
     expect(press("Home").defaultPrevented).toBe(false);
     expect(document.activeElement).toBe(focusedSetting);
