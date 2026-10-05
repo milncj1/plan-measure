@@ -52,10 +52,28 @@ jobs:
       - name: Test
         run: npm run test
 
-      - name: Build offline Windows app
-        run: npx tauri build
+      - name: Build portable Windows executable
+        run: npx tauri build --no-bundle
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "NSIS installer attempt $attempt of $maxAttempts"
+            npx tauri bundle --bundles nsis
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+            if ($attempt -lt $maxAttempts) {
+              Write-Host "Installer bundling failed. Waiting 20 seconds before retry..."
+              Start-Sleep -Seconds 20
+            }
+          }
+          exit 1
 
       - name: Upload Windows installer and portable executable
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: plan-measure-windows
