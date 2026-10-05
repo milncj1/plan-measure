@@ -1,0 +1,19 @@
+[package]
+name = "plan-measure"
+version = "2.7.1"
+description = "Offline Windows desktop wrapper for Plan Measure"
+authors = ["Plan Measure contributors"]
+license = "MIT"
+repository = "https://github.com/milncj1/plan-measure"
+edition = "2021"
+rust-version = "1.77.2"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
